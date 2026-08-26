@@ -64,9 +64,9 @@ export default function ScrollScrubLanding({
   const [reduced, setReduced] = useState(false)
   const [setMovil, setSetMovil] = useState(false) // true = usar frames-movil (vertical)
   const [ready, setReady] = useState(false)
-  const [loadedCount, setLoadedCount] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  const frameRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const trackedEnd = useRef(false)
   const trackedRol = useRef<string | null>(null)
 
@@ -80,32 +80,47 @@ export default function ScrollScrubLanding({
     return () => window.removeEventListener('resize', detectar)
   }, [])
 
-  // Precarga el SPRITESHEET (una sola imagen con los 120 frames en grid).
-  // Con background-position se muestra cada frame al instante, sin re-fetch → cero negro.
+  // Técnica canvas + video (estándar en sitios premium como Apple/Samsung):
+  // se mapea el scroll a video.currentTime y se pinta el frame con drawImage.
+  // Calidad nativa total, sin frames individuales, sin spritesheet pixelado, sin negro.
   useEffect(() => {
     if (reduced) return
-    const sprite = setMovil ? '/sprite_feria_movil.webp' : '/sprite_feria.webp'
-    const img = new Image()
-    img.onload = () => { setLoadedCount(TOTAL_FRAMES); setReady(true) }
-    img.src = sprite
+    const videoSrc = setMovil ? '/web_feria_movil.mp4' : '/web_feria.mp4'
 
-    // Configuración del grid del sprite (12 columnas × 10 filas)
-    const COLS = 12
+    const canvas = canvasRef.current
+    const video = videoRef.current
+    if (!canvas || !video) return
 
-    const setFramePos = (idx: number) => {
-      const el = frameRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Ajustar canvas al tamaño del contenedor
+    const resize = () => {
+      const el = containerRef.current
       if (!el) return
-      if (el.dataset.idx === String(idx)) return
-      const zero = idx - 1
-      const col = zero % COLS
-      const row = Math.floor(zero / COLS)
-      // background-size: ancho total del sprite / número de columnas
-      el.style.backgroundSize = `${COLS * 100}% auto`
-      el.style.backgroundPosition = `${(col / (COLS - 1)) * 100}% ${(row / 9) * 100}%`
-      el.dataset.idx = String(idx)
+      canvas.width = el.clientWidth
+      canvas.height = el.clientHeight
+    }
+    resize()
+
+    video.muted = true
+    video.playsInline = true
+    video.preload = 'auto'
+    video.src = videoSrc
+    video.onloadeddata = () => {
+      setReady(true)
+      render()
     }
 
-    // Scroll → actualizar background-position con rAF (sin re-render de React)
+    // Pintar el frame actual del video en el canvas
+    const render = () => {
+      if (ctx && video.readyState >= 2) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      }
+    }
+
+    // Scroll → avanzar/retroceder video (no se reproduce, solo se "busca")
     let raf = 0
     const onScroll = () => {
       cancelAnimationFrame(raf)
@@ -116,8 +131,10 @@ export default function ScrollScrubLanding({
         const totalScroll = el.offsetHeight - viewportH
         const scrolled = Math.max(0, Math.min(1, -el.getBoundingClientRect().top / Math.max(totalScroll, 1)))
         setProgress(scrolled)
-        const idx = Math.max(1, Math.min(TOTAL_FRAMES, Math.round(1 + scrolled * (TOTAL_FRAMES - 1))))
-        setFramePos(idx)
+        if (video.duration) {
+          video.currentTime = scrolled * video.duration
+        }
+        render()
         const end = scrolled > 0.955
         setNearEnd(end)
         if (end && !trackedEnd.current) {
@@ -127,9 +144,12 @@ export default function ScrollScrubLanding({
       })
     }
     window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll() // mostrar frame 1 de inmediato
+    window.addEventListener('resize', resize)
+    resize()
+    onScroll()
     return () => {
       window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', resize)
       cancelAnimationFrame(raf)
     }
   }, [reduced, setMovil])
@@ -184,35 +204,22 @@ export default function ScrollScrubLanding({
             </div>
           </header>
 
-          {/* PANTALLA DE CARGA — overlay mientras precargan los 120 frames */}
+          {/* PANTALLA DE CARGA — overlay mientras precarga el video */}
           {!ready && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-feria-800 transition-opacity duration-500">
-              <div className="text-center px-6 w-full max-w-sm">
+              <div className="text-center px-6">
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-feria-accent text-white flex items-center justify-center font-display text-2xl font-bold animate-pulse">F</div>
                 <h2 className="mt-5 font-display text-2xl font-bold text-white">FeriaHub</h2>
-                <p className="mt-1 text-sm text-white/70">Preparando el recorrido por las ferias de Chile…</p>
-
-                {/* PORCENTAJE grande (0-100%) para combatir la ansiedad */}
-                <div className="mt-6 font-display text-5xl font-extrabold text-white tabular-nums">
-                  {Math.round((loadedCount / TOTAL_FRAMES) * 100)}%
-                </div>
-
-                {/* barra de progreso */}
-                <div className="mt-4 h-2 w-full bg-white/15 rounded-full overflow-hidden">
-                  <div className="h-full bg-feria-accent rounded-full transition-[width] duration-200" style={{ width: `${(loadedCount / TOTAL_FRAMES) * 100}%` }} />
-                </div>
-
-                <p className="mt-3 text-xs text-white/50">{loadedCount} / {TOTAL_FRAMES} fotogramas</p>
+                <p className="mt-2 text-sm text-white/70">Preparando el recorrido por las ferias de Chile…</p>
+                <div className="mt-5 mx-auto w-8 h-8 border-2 border-white/20 border-t-feria-accent rounded-full animate-spin" />
               </div>
             </div>
           )}
 
-          <div
-            ref={frameRef}
-            className="absolute inset-0 w-full h-full"
-            data-idx="1"
-            style={{ backgroundImage: `url("${setMovil ? '/sprite_feria_movil.webp' : '/sprite_feria.webp'}")`, backgroundSize: '1200% auto', backgroundPosition: '0% 0%', backgroundRepeat: 'no-repeat', willChange: 'background-position' }}
-          />
+          {/* Canvas donde se pinta el frame del video según el scroll */}
+          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+          {/* Video oculto (no se reproduce, solo se busca por scroll) */}
+          <video ref={videoRef} className="hidden" muted playsInline preload="auto" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/25 pointer-events-none" />
 
           {/* SALTAR historia */}

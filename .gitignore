@@ -23,3 +23,5 @@ Thumbs.db
 
 # videos fuente (no necesarios en build, ya extraídos a frames)
 app/public/*.mp4
+!app/public/web_feria.mp4
+!app/public/web_feria_movil.mp4
