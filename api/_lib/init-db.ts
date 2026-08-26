@@ -4,31 +4,72 @@ import bcrypt from 'bcryptjs'
 initSchema()
 console.log('Schema inicializado')
 
-// Seed: organizador demo + ferias demo para que el MVP no arranque vacío
+// ── Organizador demo + muchas ferias realistas (para que las demos se aprecien) ──
 const org = db.prepare('SELECT id FROM usuarios WHERE email = ?').get('org@feriahub.cl')
-if (!org) {
+let orgId: number
+if (org) {
+  orgId = org.id as number
+} else {
   const hash = bcrypt.hashSync('demo1234', 10)
   const info = db.prepare('INSERT INTO usuarios (email, password_hash, rol, nombre) VALUES (?, ?, ?, ?)')
     .run('org@feriahub.cl', hash, 'organizador', 'FeriaHub Demo')
-  const orgId = info.lastInsertRowid
-
-  db.prepare('INSERT INTO ferias (organizador_id, nombre, ciudad, fecha, lugar, rubros, estado, cupos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(orgId, 'Feria Artesanal de Valparaíso', 'Valparaíso', '2026-11-14', 'Paseo Yugoslavo', JSON.stringify(['Artesanía', 'Cerámica', 'Textil']), 'abierta', 60)
-  db.prepare('INSERT INTO ferias (organizador_id, nombre, ciudad, fecha, lugar, rubros, estado, cupos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(orgId, 'Mercado de Diseño Providencia', 'Santiago', '2026-12-05', 'Plaza de la Constitución', JSON.stringify(['Diseño', 'Moda', 'Artesanía']), 'abierta', 80)
-  console.log('Seed: organizador demo + 2 ferias creados')
+  orgId = Number(info.lastInsertRowid)
 }
 
-// Seed: expositor demo con perfil completo (para "ver demo sin registrarme")
+// Insertar ferias variadas (solo si no existen aún)
+const feriasDemo = [
+  { nombre: 'Feria Artesanal de Valparaíso', ciudad: 'Valparaíso', fecha: '2026-11-14', lugar: 'Paseo Yugoslavo', rubros: ['Artesanía', 'Cerámica', 'Textil'], estado: 'abierta', cupos: 60 },
+  { nombre: 'Mercado de Diseño Providencia', ciudad: 'Santiago', fecha: '2026-11-22', lugar: 'Plaza de la Constitución', rubros: ['Diseño', 'Moda', 'Artesanía'], estado: 'abierta', cupos: 80 },
+  { nombre: 'Feria Costumbrista de Pomaire', ciudad: 'Melipilla', fecha: '2026-11-28', lugar: 'Pueblo de Pomaire', rubros: ['Greda', 'Alfarería', 'Cocina'], estado: 'abierta', cupos: 100 },
+  { nombre: 'Feria Navideña del Bicentenario', ciudad: 'Santiago', fecha: '2026-12-10', lugar: 'Parque Bicentenario', rubros: ['Regalos', 'Artesanía', 'Gastronomía'], estado: 'abierta', cupos: 120 },
+  { nombre: 'Mercado de La Costa', ciudad: 'Viña del Mar', fecha: '2026-12-19', lugar: 'Costanera de Viña', rubros: ['Artesanía', 'Gastronomía', 'Textil'], estado: 'abierta', cupos: 60 },
+  { nombre: 'Feria de Fiestas Patrias', ciudad: 'Valparaíso', fecha: '2026-09-18', lugar: 'Costanera', rubros: ['Cocina', 'Artesanía'], estado: 'cerrada', cupos: 90 },
+  { nombre: 'Feria de Primavera de La Serena', ciudad: 'La Serena', fecha: '2026-10-25', lugar: 'Plaza de Armas', rubros: ['Floristería', 'Artesanía'], estado: 'cerrada', cupos: 50 },
+  { nombre: 'Feria del Emprendimiento de Concepción', ciudad: 'Concepción', fecha: '2027-01-09', lugar: 'Plaza Independencia', rubros: ['Emprendimiento', 'Artesanía', 'Diseño'], estado: 'proxima', cupos: 100 },
+  { nombre: 'Feria Gastronómica del Sur', ciudad: 'Temuco', fecha: '2027-02-13', lugar: 'Parque Estadio', rubros: ['Gastronomía', 'Cocina', 'Cerveza artesanal'], estado: 'proxima', cupos: 80 },
+]
+
+const countFerias = (db.prepare('SELECT COUNT(*) as n FROM ferias').get() as { n: number }).n
+if (countFerias === 0) {
+  const ins = db.prepare('INSERT INTO ferias (organizador_id, nombre, ciudad, fecha, lugar, rubros, estado, cupos, requisitos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+  for (const f of feriasDemo) {
+    ins.run(orgId, f.nombre, f.ciudad, f.fecha, f.lugar, JSON.stringify(f.rubros), f.estado, f.cupos, '')
+  }
+  console.log(`Seed: ${feriasDemo.length} ferias creadas`)
+}
+
+// ── Expositor demo + varios perfiles extra (para que la demo de postulaciones se vea rica) ──
 const expo = db.prepare('SELECT id FROM usuarios WHERE email = ?').get('expo@feriahub.cl')
-if (!expo) {
+let expoId: number
+if (expo) {
+  expoId = expo.id as number
+} else {
   const hash = bcrypt.hashSync('demo1234', 10)
   const info = db.prepare('INSERT INTO usuarios (email, password_hash, rol, nombre) VALUES (?, ?, ?, ?)')
     .run('expo@feriahub.cl', hash, 'expositor', 'Valentina Rojas')
-  const expoId = Number(info.lastInsertRowid)
+  expoId = Number(info.lastInsertRowid)
   db.prepare('INSERT INTO perfiles (usuario_id, rubro, ciudad, descripcion, foto, categorias, pct_perfil) VALUES (?, ?, ?, ?, ?, ?, ?)')
     .run(expoId, 'Cerámica artesanal', 'Valparaíso', 'Cerámica hecha a mano en gres y porcelana. Piezas utilitarias y decorativas.', 'VR', JSON.stringify(['Cerámica', 'Arte', 'Decoración']), 100)
   console.log('Seed: expositor demo creado (expo@feriahub.cl)')
 }
+
+// Perfiles extra de postulantes para que el panel organizador se vea real
+const extraPerfiles = [
+  { nombre: 'Marcela Ibáñez', rubro: 'Textil y tejido', ciudad: 'Santiago', cat: ['Textil', 'Tejido'], desc: 'Tejidos en lana natural, ponchos y accesorios.' },
+  { nombre: 'Pedro Salinas', rubro: 'Alfarería en greda', ciudad: 'Valparaíso', cat: ['Greda', 'Alfarería'], desc: 'Cerámica tradicional chilena de Pomaire.' },
+  { nombre: 'Camila Fuentes', rubro: 'Joyería artesanal', ciudad: 'Santiago', cat: ['Joyería', 'Arte'], desc: 'Joyas hechas a mano en cobre y plata.' },
+]
+
+for (const p of extraPerfiles) {
+  const ex = db.prepare('SELECT id FROM usuarios WHERE email = ?').get(`${p.nombre.toLowerCase().replace(/[^a-z]+/g,'')}@demo.cl`)
+  if (ex) continue
+  const hash = bcrypt.hashSync('demo1234', 10)
+  const info = db.prepare('INSERT INTO usuarios (email, password_hash, rol, nombre) VALUES (?, ?, ?, ?)')
+    .run(`${p.nombre.toLowerCase().replace(/[^a-z]+/g,'')}@demo.cl`, hash, 'expositor', p.nombre)
+  const id = Number(info.lastInsertRowid)
+  db.prepare('INSERT INTO perfiles (usuario_id, rubro, ciudad, descripcion, foto, categorias, pct_perfil) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(id, p.rubro, p.ciudad, p.desc, p.nombre.slice(0,2).toUpperCase(), JSON.stringify(p.cat), 90)
+}
+console.log('Seed: perfiles extra listos')
 
 console.log('DB lista. Demo org: org@feriahub.cl / demo1234 · Expo: expo@feriahub.cl / demo1234')

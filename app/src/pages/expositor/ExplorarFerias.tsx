@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MagnifyingGlass, MapPin, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
+import { MagnifyingGlass, MapPin, CalendarBlank, ArrowRight, SquaresFour, CalendarDots } from '@phosphor-icons/react'
 import { api, type Feria } from '../../lib/api'
 import { fmtFecha } from '../../lib/format'
+import CalendarioFerias from './CalendarioFerias'
 
 export default function ExplorarFerias({ onVerFeria }: { onVerFeria: (id: number) => void }) {
   const [ferias, setFerias] = useState<Feria[]>([])
   const [query, setQuery] = useState('')
   const [ciudad, setCiudad] = useState('')
   const [rubro, setRubro] = useState('')
+  const [vista, setVista] = useState<'grid' | 'calendario'>('grid')
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -40,8 +42,8 @@ export default function ExplorarFerias({ onVerFeria }: { onVerFeria: (id: number
           placeholder="Buscar por nombre o categoría…" value={query} onChange={e => setQuery(e.target.value)} />
       </div>
 
-      {/* filtros */}
-      <div className="mt-4 flex flex-wrap gap-2">
+      {/* filtros + toggle vista */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <select className="input w-auto" value={ciudad} onChange={e => setCiudad(e.target.value)}>
           <option value="">Todas las comunas</option>
           {ciudades.map(c => <option key={c} value={c}>{c}</option>)}
@@ -50,18 +52,36 @@ export default function ExplorarFerias({ onVerFeria }: { onVerFeria: (id: number
           <option value="">Todas las categorías</option>
           {rubros.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
+
+        {/* toggle tarjetas / calendario */}
+        <div className="ml-auto flex rounded-lg border border-feria-200 overflow-hidden">
+          <button onClick={() => setVista('grid')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium ${vista === 'grid' ? 'bg-feria-600 text-white' : 'text-feria-600 hover:bg-feria-50'}`}>
+            <SquaresFour size={16} /> Tarjetas
+          </button>
+          <button onClick={() => setVista('calendario')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium ${vista === 'calendario' ? 'bg-feria-600 text-white' : 'text-feria-600 hover:bg-feria-50'}`}>
+            <CalendarDots size={16} /> Calendario
+          </button>
+        </div>
       </div>
 
-      {/* grid */}
-      <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {!loaded && <p className="text-feria-500 col-span-full">Cargando ferias…</p>}
-        {loaded && filtradas.length === 0 && (
-          <p className="text-feria-500 col-span-full">No encontramos ferias con esos filtros. Prueba con otros.</p>
-        )}
-        {filtradas.map(f => (
-          <FeriaCard key={f.id} f={f} onVer={() => onVerFeria(f.id)} />
-        ))}
-      </div>
+      {/* contenido: grid o calendario */}
+      {vista === 'calendario' ? (
+        <div className="mt-6">
+          <CalendarioFerias ferias={filtradas} onVerFeria={onVerFeria} />
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {!loaded && <p className="text-feria-500 col-span-full">Cargando ferias…</p>}
+          {loaded && filtradas.length === 0 && (
+            <p className="text-feria-500 col-span-full">No encontramos ferias con esos filtros. Prueba con otros.</p>
+          )}
+          {filtradas.map(f => (
+            <FeriaCard key={f.id} f={f} onVer={() => onVerFeria(f.id)} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
