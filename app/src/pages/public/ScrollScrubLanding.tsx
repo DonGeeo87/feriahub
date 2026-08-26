@@ -39,7 +39,6 @@ function chapterAnim(inicio: number, fin: number, progress: number): { opacity: 
   return { opacity, y }
 }
 
-// capítulo activo según progreso (para el indicador 01/04)
 function capituloActivo(progress: number): number {
   let idx = 0
   for (let i = 0; i < CAPITULOS.length; i++) {
@@ -56,12 +55,15 @@ export default function ScrollScrubLanding({
   onChooseRol: (rol: 'expositor' | 'organizador') => void
   onExploreDemo: () => void
 }) {
-  const [frame, setFrame] = useState(1)
   const [progress, setProgress] = useState(0)
   const [nearEnd, setNearEnd] = useState(false)
   const [reduced, setReduced] = useState(false)
   const [setMovil, setSetMovil] = useState(false) // true = usar frames-movil (vertical)
+  const [ready, setReady] = useState(false)
+  const [loadedCount, setLoadedCount] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const cacheRef = useRef<Record<string, string>>({}) // url → dataURL (caché en memoria)
   const trackedEnd = useRef(false)
   const trackedRol = useRef<string | null>(null)
 
@@ -75,42 +77,67 @@ export default function ScrollScrubLanding({
     return () => window.removeEventListener('resize', detectar)
   }, [])
 
-  // Precarga primeros 20 frames del set activo
+  // Precarga TODOS los frames del set activo en caché, y actualiza el <img> sin re-render.
   useEffect(() => {
     if (reduced) return
     const base = setMovil ? '/frames-movil' : '/frames'
-    for (let i = 1; i <= 20; i++) {
+    const cache = cacheRef.current
+    let lastIdx = 1
+
+    const setSrc = (idx: number) => {
+      if (!imgRef.current) return
+      const url = cache[String(idx)] ?? `${base}/frame_${String(idx).padStart(3, '0')}.webp`
+      // solo cambia el src si cambió el frame (evita re-decodificar el mismo)
+      if (imgRef.current.dataset.idx !== String(idx)) {
+        imgRef.current.src = url
+        imgRef.current.dataset.idx = String(idx)
+      }
+    }
+
+    // Precargar todos (120) en paralelo
+    let loaded = 0
+    for (let i = 1; i <= TOTAL_FRAMES; i++) {
+      const url = `${base}/frame_${String(i).padStart(3, '0')}.webp`
       const img = new Image()
-      img.src = `${base}/frame_${String(i).padStart(3, '0')}.webp`
+      img.onload = () => {
+        cache[String(i)] = url
+        loaded++
+        setLoadedCount(loaded)
+        if (loaded === TOTAL_FRAMES) setReady(true)
+      }
+      img.src = url
+    }
+
+    // Scroll → actualizar <img> imperativamente con rAF (sin re-render de React)
+    let raf = 0
+    const onScroll = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        const el = containerRef.current
+        if (!el) return
+        const viewportH = window.innerHeight
+        const totalScroll = el.offsetHeight - viewportH
+        const scrolled = Math.max(0, Math.min(1, -el.getBoundingClientRect().top / Math.max(totalScroll, 1)))
+        setProgress(scrolled)
+        const idx = Math.max(1, Math.min(TOTAL_FRAMES, Math.round(1 + scrolled * (TOTAL_FRAMES - 1))))
+        setSrc(idx)
+        const end = scrolled > 0.955
+        setNearEnd(end)
+        if (end && !trackedEnd.current) {
+          trackedEnd.current = true
+          track('landing_final')
+        }
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll() // mostrar frame 1 de inmediato
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(raf)
     }
   }, [reduced, setMovil])
 
-  // Scroll → frame + progreso
-  useEffect(() => {
-    if (reduced) return
-    const onScroll = () => {
-      const el = containerRef.current
-      if (!el) return
-      const viewportH = window.innerHeight
-      const totalScroll = el.offsetHeight - viewportH
-      const scrolled = Math.max(0, Math.min(1, -el.getBoundingClientRect().top / Math.max(totalScroll, 1)))
-      setProgress(scrolled)
-      const idx = Math.round(1 + scrolled * (TOTAL_FRAMES - 1))
-      setFrame(Math.max(1, Math.min(TOTAL_FRAMES, idx)))
-      const end = scrolled > 0.955
-      setNearEnd(end)
-      if (end && !trackedEnd.current) {
-        trackedEnd.current = true
-        track('landing_final')
-      }
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [reduced])
-
   const base = setMovil ? '/frames-movil' : '/frames'
-  const imgSrc = `${base}/frame_${String(frame).padStart(3, '0')}.webp`
 
   const elegir = (rol: 'expositor' | 'organizador') => {
     if (trackedRol.current !== rol) { trackedRol.current = rol; track('landing_rol', rol) }
@@ -136,11 +163,28 @@ export default function ScrollScrubLanding({
     <div>
       <div ref={containerRef} className="relative" style={{ height: '560vh' }}>
         <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
+
+          {/* PANTALLA DE CARGA — overlay mientras precargan los 120 frames */}
+          {!ready && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-feria-800 transition-opacity duration-500">
+              <div className="text-center px-6">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-feria-600 text-white flex items-center justify-center font-display text-2xl font-bold animate-pulse">F</div>
+                <h2 className="mt-4 font-display text-xl font-bold text-white">FeriaHub</h2>
+                <p className="mt-1 text-sm text-white/70">Preparando el recorrido por las ferias de Chile…</p>
+                <div className="mt-4 w-48 h-1.5 bg-white/15 rounded-full overflow-hidden mx-auto">
+                  <div className="h-full bg-feria-accent rounded-full transition-[width] duration-200" style={{ width: `${(loadedCount / TOTAL_FRAMES) * 100}%` }} />
+                </div>
+              </div>
+            </div>
+          )}
+
           <img
-            src={imgSrc}
+            ref={imgRef}
+            src={`${base}/frame_001.webp`}
             alt="Feria chilena"
             className="absolute inset-0 w-full h-full object-cover"
             draggable={false}
+            decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/25 pointer-events-none" />
 
@@ -164,8 +208,11 @@ export default function ScrollScrubLanding({
 
           {/* HERO */}
           <div
-            className="absolute inset-0 flex items-center justify-center px-6"
-            style={{ opacity: heroOpacity, transform: `translateY(${heroY}px)` }}
+            className="absolute inset-0 flex items-center justify-center px-6 transition-opacity duration-700"
+            style={{
+              opacity: heroOpacity * (ready ? 1 : 0),
+              transform: `translateY(${heroY}px)`,
+            }}
           >
             <div className="text-center max-w-2xl rounded-3xl px-6 py-8 sm:px-10"
               style={{ backgroundColor: 'rgba(20,14,12,0.4)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}>
