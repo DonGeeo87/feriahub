@@ -22,8 +22,8 @@ COPY tsconfig.api.json ./
 COPY api/ ./api/
 COPY db/ ./db/
 
-# frontend ya construido
-COPY --from=frontend-builder /app/dist ./app/dist
+# frontend ya construido (el builder usa WORKDIR /build)
+COPY --from=frontend-builder /build/dist ./app/dist
 
 EXPOSE 3000
 # init-db al arrancar (idempotente: crea schema + seeds si faltan)
