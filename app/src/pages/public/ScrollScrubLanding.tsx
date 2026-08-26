@@ -333,15 +333,12 @@ export default function ScrollScrubLanding({
 
                 {/* ENCUESTA — segundo foco */}
                 <CierraItem d="0.4s">
-                  <a
-                    href="https://codigoguerrero.dev/ferias/encuesta"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => track('landing_encuesta')}
+                  <button
+                    onClick={() => { track('landing_encuesta'); navigate('/encuesta') }}
                     className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/40 bg-white/10 backdrop-blur px-5 py-3 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
                   >
                     ¿Te interesa? Ayúdanos a saberlo: encuesta de 2 minutos →
-                  </a>
+                  </button>
                 </CierraItem>
 
                 <CierraItem d="0.5s">

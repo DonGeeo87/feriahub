@@ -13,6 +13,7 @@ import MiTrayectoria from './pages/expositor/MiTrayectoria'
 import PerfilView from './pages/expositor/PerfilView'
 import DashboardOrganizador from './pages/organizador/DashboardOrganizador'
 import PanelPostulaciones from './pages/organizador/PanelPostulaciones'
+import EncuestaView from './pages/EncuestaView'
 import { api, type Rol } from './lib/api'
 
 export default function App() {
@@ -53,10 +54,11 @@ function Inner() {
       {/* LANDING: full-screen inmersiva, SIN navbar/footer (scrollable) */}
       <Route path="/" element={<ScrollScrubLanding onChooseRol={(rol) => { navigate('/register') }} onExploreDemo={() => entrarDemo('expositor')} onExploreDemoOrganizador={() => entrarDemo('organizador')} />} />
 
-      {/* Públicas (login/register con navbar/footer) */}
+      {/* Públicas (login/register/encuesta con navbar/footer) */}
       <Route element={<PublicLayout />}>
         <Route path="/login" element={user ? <Navigate to={user.rol === 'expositor' ? '/expositor' : '/organizador'} replace /> : <LoginView onSwitch={(m) => navigate(m === 'register' ? '/register' : '/login')} />} />
         <Route path="/register" element={user ? <Navigate to={user.rol === 'expositor' ? '/expositor' : '/organizador'} replace /> : <RegisterView onSwitch={(m) => navigate(m === 'login' ? '/login' : '/register')} />} />
+        <Route path="/encuesta" element={<EncuestaView />} />
       </Route>
 
       {/* Expositor (con AppShell) */}

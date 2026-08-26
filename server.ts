@@ -18,6 +18,22 @@ app.use(helmet({ contentSecurityPolicy: false }))
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 
+// Proxy de la encuesta → backend de codigoguerrero.dev (evita CORS desde el origen feriahub)
+const LEADS_TARGET = process.env.LEADS_TARGET || 'https://codigoguerrero.dev/api/leads'
+app.post('/api/leads', async (req, res) => {
+  try {
+    const upstream = await fetch(LEADS_TARGET, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    })
+    const data = await upstream.json().catch(() => ({}))
+    res.status(upstream.status).json(data)
+  } catch {
+    res.status(502).json({ error: 'No se pudo contactar el servidor de respuestas.' })
+  }
+})
+
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
 app.use('/api/auth', authRoutes)
