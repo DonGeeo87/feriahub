@@ -79,6 +79,47 @@ export default function ScrollScrubLanding({
     return () => window.removeEventListener('resize', detectar)
   }, [])
 
+  // Al montar la landing (p.ej. al volver de una demo), resetear el scroll al inicio
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
+  // Hitots de progreso donde cambia de capítulo (para swipe en móvil)
+  const hitos = [0.06, 0.20, 0.52, 0.80, 0.96, 1.0]
+
+  // Swipe vertical en móvil: un gesto avanza/retrocede al siguiente capítulo
+  useEffect(() => {
+    if (reduced) return
+    const el = containerRef.current
+    if (!el) return
+    let y0: number | null = null
+    const onTouchStart = (e: TouchEvent) => { y0 = e.touches[0].clientY }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (y0 === null) return
+      const dy = e.changedTouches[0].clientY - y0
+      const umbral = 50
+      if (Math.abs(dy) < umbral) return
+      const el2 = containerRef.current
+      if (!el2) return
+      const totalScroll = el2.offsetHeight - window.innerHeight
+      const actual = Math.max(0, Math.min(1, -el2.getBoundingClientRect().top / Math.max(totalScroll, 1)))
+      // siguiente hito hacia arriba (avanzar) o hacia abajo (retroceder)
+      let target: number
+      if (dy < 0) {
+        target = hitos.find(h => h > actual) ?? 1
+      } else {
+        target = [...hitos].reverse().find(h => h < actual) ?? 0
+      }
+      window.scrollTo({ top: target * totalScroll, behavior: 'smooth' })
+    }
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [reduced, setMovil])
+
   // Video visible + scroll controla currentTime (sin canvas).
   // Lenis intercepta el scroll nativo, así que usamos loop de rAF que lee la posición real.
   useEffect(() => {

@@ -25,9 +25,15 @@ export default function App() {
 }
 
 function Inner() {
-  const { user, login } = useAuth()
+  const { user, login, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // Ir a la landing pública: cierra la sesión demo y navega a / (sin el guard que redirige al dashboard)
+  const irHome = () => {
+    logout()
+    navigate('/', { replace: true })
+  }
 
   // Entrar a la demo sin registrarse (elige rol y entra con cuenta demo)
   const entrarDemo = async (rol: 'expositor' | 'organizador') => {
@@ -35,16 +41,17 @@ function Inner() {
       const u = rol === 'organizador'
         ? await login('org@feriahub.cl', 'demo1234')
         : await login('expo@feriahub.cl', 'demo1234')
-      // login() ya hace setUser; navegar a '/' dispara el redirect automático al dashboard según rol
-      navigate(u.rol === 'expositor' ? '/expositor' : '/organizador', { replace: true })
+      // login() ya hace setUser; usar replace:false para que el botón atrás vuelva a la landing
+      navigate(u.rol === 'expositor' ? '/expositor' : '/organizador')
     } catch {
       navigate('/login')
     }
   }
 
-  // Si hay sesión, redirige según rol cuando toca una ruta pública
+  // Si hay sesión, redirige según rol cuando toca una ruta pública (pero NO forzar en demo: el usuario
+  // puede ir a /encuesta y a la landing pública). Solo redirige desde /login y /register.
   if (user) {
-    if (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/') {
+    if (location.pathname === '/login' || location.pathname === '/register') {
       return <Navigate to={user.rol === 'expositor' ? '/expositor' : '/organizador'} replace />
     }
   }
