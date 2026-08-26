@@ -97,27 +97,13 @@ export default function ScrollScrubLanding({
       }
     }
 
-    // Precargar todos (120) en paralelo y convertirlos a dataURL (RAM) para nunca re-fetch
+    // Precargar todos (120) en paralelo — el navegador cachea los WebP (rápido, sin dataURL)
     let loaded = 0
     for (let i = 1; i <= TOTAL_FRAMES; i++) {
       const url = `${base}/frame_${String(i).padStart(3, '0')}.webp`
       const img = new Image()
       img.onload = () => {
-        // convertir a dataURL para que quede en RAM (sin re-fetch, sin frame negro)
-        try {
-          const c = document.createElement('canvas')
-          c.width = img.naturalWidth
-          c.height = img.naturalHeight
-          const ctx = c.getContext('2d')
-          if (ctx) {
-            ctx.drawImage(img, 0, 0)
-            cache[String(i)] = c.toDataURL('image/webp', 0.85)
-          } else {
-            cache[String(i)] = url
-          }
-        } catch {
-          cache[String(i)] = url
-        }
+        cache[String(i)] = url
         loaded++
         setLoadedCount(loaded)
         if (loaded === TOTAL_FRAMES) setReady(true)
@@ -207,13 +193,22 @@ export default function ScrollScrubLanding({
           {/* PANTALLA DE CARGA — overlay mientras precargan los 120 frames */}
           {!ready && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-feria-800 transition-opacity duration-500">
-              <div className="text-center px-6">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-feria-600 text-white flex items-center justify-center font-display text-2xl font-bold animate-pulse">F</div>
-                <h2 className="mt-4 font-display text-xl font-bold text-white">FeriaHub</h2>
+              <div className="text-center px-6 w-full max-w-sm">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-feria-accent text-white flex items-center justify-center font-display text-2xl font-bold animate-pulse">F</div>
+                <h2 className="mt-5 font-display text-2xl font-bold text-white">FeriaHub</h2>
                 <p className="mt-1 text-sm text-white/70">Preparando el recorrido por las ferias de Chile…</p>
-                <div className="mt-4 w-48 h-1.5 bg-white/15 rounded-full overflow-hidden mx-auto">
+
+                {/* PORCENTAJE grande (0-100%) para combatir la ansiedad */}
+                <div className="mt-6 font-display text-5xl font-extrabold text-white tabular-nums">
+                  {Math.round((loadedCount / TOTAL_FRAMES) * 100)}%
+                </div>
+
+                {/* barra de progreso */}
+                <div className="mt-4 h-2 w-full bg-white/15 rounded-full overflow-hidden">
                   <div className="h-full bg-feria-accent rounded-full transition-[width] duration-200" style={{ width: `${(loadedCount / TOTAL_FRAMES) * 100}%` }} />
                 </div>
+
+                <p className="mt-3 text-xs text-white/50">{loadedCount} / {TOTAL_FRAMES} fotogramas</p>
               </div>
             </div>
           )}
