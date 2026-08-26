@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
-import { ClipboardText, Check, MapPin, Plus, ArrowRight } from '@phosphor-icons/react'
+import { ClipboardText, Check, MapPin, Plus, ArrowRight, SquaresFour, CalendarDots } from '@phosphor-icons/react'
 import { api, type Feria, type PostulacionPanel } from '../../lib/api'
 import { fmtFecha } from '../../lib/format'
 import type { OrganizadorTab } from '../../components/AppShell'
+import CalendarioFerias from '../expositor/CalendarioFerias'
 
 export default function DashboardOrganizador({ onTab }: { onTab: (t: OrganizadorTab) => void }) {
   const [ferias, setFerias] = useState<Feria[]>([])
   const [postulaciones, setPostulaciones] = useState<PostulacionPanel[]>([])
   const [loaded, setLoaded] = useState(false)
+  const [vista, setVista] = useState<'grid' | 'calendario'>('grid')
 
   useEffect(() => {
     Promise.all([
@@ -38,7 +40,26 @@ export default function DashboardOrganizador({ onTab }: { onTab: (t: Organizador
       </div>
 
       {/* mis eventos */}
-      <h2 className="font-display text-lg font-bold text-feria-800 mt-8">Mis eventos</h2>
+      <div className="flex items-center justify-between flex-wrap gap-3 mt-8">
+        <h2 className="font-display text-lg font-bold text-feria-800">Mis eventos</h2>
+        {/* toggle tarjetas / calendario */}
+        <div className="flex rounded-lg border border-feria-200 overflow-hidden">
+          <button onClick={() => setVista('grid')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium ${vista === 'grid' ? 'bg-feria-600 text-white' : 'text-feria-600 hover:bg-feria-50'}`}>
+            <SquaresFour size={16} /> Tarjetas
+          </button>
+          <button onClick={() => setVista('calendario')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium ${vista === 'calendario' ? 'bg-feria-600 text-white' : 'text-feria-600 hover:bg-feria-50'}`}>
+            <CalendarDots size={16} /> Calendario
+          </button>
+        </div>
+      </div>
+
+      {vista === 'calendario' ? (
+        <div className="mt-3">
+          <CalendarioFerias ferias={ferias} onVerFeria={() => onTab('postulaciones')} />
+        </div>
+      ) : (
       <div className="mt-3 space-y-3">
         {!loaded && <p className="text-feria-500">Cargando…</p>}
         {loaded && ferias.length === 0 && <p className="text-feria-500">Aún no creas ferias.</p>}
@@ -62,6 +83,7 @@ export default function DashboardOrganizador({ onTab }: { onTab: (t: Organizador
           </div>
         ))}
       </div>
+      )}
     </div>
   )
 }
