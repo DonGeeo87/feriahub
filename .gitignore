@@ -1,0 +1,22 @@
+# Dependencias
+node_modules/
+app/node_modules/
+
+# Datos locales (SQLite)
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Builds
+dist/
+app/dist/
+
+# Env
+.env
+.env.local
+
+# Sistema
+.DS_Store
+Thumbs.db
