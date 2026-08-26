@@ -53,9 +53,11 @@ function Inner() {
 
   return (
     <Routes>
-      {/* Públicas (con navbar/footer) */}
+      {/* LANDING: full-screen inmersiva, SIN navbar/footer (scrollable) */}
+      <Route path="/" element={<ScrollScrubLanding onChooseRol={(rol) => { navigate('/register') }} onExploreDemo={() => entrarDemo('expositor')} onExploreDemoOrganizador={() => entrarDemo('organizador')} />} />
+
+      {/* Públicas (login/register con navbar/footer) */}
       <Route element={<PublicLayout />}>
-        <Route path="/" element={<ScrollScrubLanding onChooseRol={(rol) => { navigate('/register') }} onExploreDemo={() => entrarDemo('expositor')} onExploreDemoOrganizador={() => entrarDemo('organizador')} />} />
         <Route path="/login" element={user ? <Navigate to={user.rol === 'expositor' ? '/expositor' : '/organizador'} replace /> : <LoginView onSwitch={(m) => navigate(m === 'register' ? '/register' : '/login')} />} />
         <Route path="/register" element={user ? <Navigate to={user.rol === 'expositor' ? '/expositor' : '/organizador'} replace /> : <RegisterView onSwitch={(m) => navigate(m === 'login' ? '/login' : '/register')} />} />
       </Route>

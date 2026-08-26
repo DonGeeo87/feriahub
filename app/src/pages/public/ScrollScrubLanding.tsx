@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Storefront, MapPin, ArrowDown, SkipForward, ArrowUp } from '@phosphor-icons/react'
 import WordReveal from '../../components/ux/WordReveal'
 import { track } from '../../lib/track'
@@ -57,6 +58,7 @@ export default function ScrollScrubLanding({
   onExploreDemo: () => void
   onExploreDemoOrganizador?: () => void
 }) {
+  const navigate = useNavigate()
   const [progress, setProgress] = useState(0)
   const [nearEnd, setNearEnd] = useState(false)
   const [reduced, setReduced] = useState(false)
@@ -65,7 +67,7 @@ export default function ScrollScrubLanding({
   const [loadedCount, setLoadedCount] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
-  const cacheRef = useRef<Record<string, string>>({}) // url → dataURL (caché en memoria)
+  const cacheRef = useRef<Record<string, string>>({}) // idx → dataURL (en memoria, sin re-fetch)
   const trackedEnd = useRef(false)
   const trackedRol = useRef<string | null>(null)
 
@@ -95,13 +97,27 @@ export default function ScrollScrubLanding({
       }
     }
 
-    // Precargar todos (120) en paralelo
+    // Precargar todos (120) en paralelo y convertirlos a dataURL (RAM) para nunca re-fetch
     let loaded = 0
     for (let i = 1; i <= TOTAL_FRAMES; i++) {
       const url = `${base}/frame_${String(i).padStart(3, '0')}.webp`
       const img = new Image()
       img.onload = () => {
-        cache[String(i)] = url
+        // convertir a dataURL para que quede en RAM (sin re-fetch, sin frame negro)
+        try {
+          const c = document.createElement('canvas')
+          c.width = img.naturalWidth
+          c.height = img.naturalHeight
+          const ctx = c.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(img, 0, 0)
+            cache[String(i)] = c.toDataURL('image/webp', 0.85)
+          } else {
+            cache[String(i)] = url
+          }
+        } catch {
+          cache[String(i)] = url
+        }
         loaded++
         setLoadedCount(loaded)
         if (loaded === TOTAL_FRAMES) setReady(true)
@@ -165,6 +181,29 @@ export default function ScrollScrubLanding({
       <div ref={containerRef} className="relative" style={{ height: '560vh' }}>
         <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
 
+          {/* NAVBAR morphinglass — se ve el fondo a través */}
+          <header className="absolute top-0 inset-x-0 z-40">
+            <div className="px-4 sm:px-6 h-14 flex items-center justify-between"
+              style={{ background: 'rgba(20,14,12,0.25)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+              <button onClick={() => navigate('/')} className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg bg-feria-accent text-white flex items-center justify-center">
+                  <Storefront size={18} weight="bold" />
+                </span>
+                <span className="font-display font-bold text-lg text-white" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.6)' }}>FeriaHub</span>
+              </button>
+
+              <nav className="flex items-center gap-2">
+                <button onClick={() => navigate('/login')} className="rounded-lg px-3 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10 transition-colors"
+                  style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+                  Ingresar
+                </button>
+                <button onClick={() => navigate('/register')} className="rounded-lg bg-feria-accent px-4 py-1.5 text-sm font-semibold text-white hover:bg-feria-accent/90 transition-colors">
+                  Crear cuenta
+                </button>
+              </nav>
+            </div>
+          </header>
+
           {/* PANTALLA DE CARGA — overlay mientras precargan los 120 frames */}
           {!ready && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-feria-800 transition-opacity duration-500">
@@ -190,7 +229,7 @@ export default function ScrollScrubLanding({
           {/* SALTAR historia */}
           <button
             onClick={saltar}
-            className="absolute top-4 right-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/40 backdrop-blur px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-black/60 hover:text-white transition-colors"
+            className="absolute top-16 right-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/40 backdrop-blur px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-black/60 hover:text-white transition-colors"
           >
             <SkipForward size={14} weight="bold" /> Saltar
           </button>
@@ -199,7 +238,7 @@ export default function ScrollScrubLanding({
           {progress > 0.1 && (
             <button
               onClick={volverArriba}
-              className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/40 backdrop-blur px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-black/60 hover:text-white transition-colors"
+              className="absolute top-16 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/40 backdrop-blur px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-black/60 hover:text-white transition-colors"
             >
               <ArrowUp size={14} weight="bold" /> Subir
             </button>
