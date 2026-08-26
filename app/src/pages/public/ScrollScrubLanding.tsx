@@ -84,8 +84,10 @@ export default function ScrollScrubLanding({
     window.scrollTo(0, 0)
   }, [])
 
-  // Hitots de progreso donde cambia de capítulo (para swipe en móvil)
-  const hitos = [0.06, 0.20, 0.52, 0.80, 0.96, 1.0]
+  // Puntos de swipe en móvil: el CENTRO de la zona de lectura de cada capítulo
+  // (donde opacity=1 y el texto está completo). Calculado como inicio + 50% del rango.
+  // 01→0.13, 02→0.36, 03→0.66, 04→0.88, cierre→1.0
+  const hitos = [0.13, 0.36, 0.66, 0.88, 1.0]
 
   // Swipe vertical en móvil: un gesto avanza/retrocede al siguiente capítulo
   useEffect(() => {
