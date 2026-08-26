@@ -72,4 +72,37 @@ for (const p of extraPerfiles) {
 }
 console.log('Seed: perfiles extra listos')
 
+// ── Postulaciones demo en distintos estados (para que el organizador vea el flujo completo) ──
+const feriasIds = db.prepare('SELECT id FROM ferias ORDER BY id').all() as { id: number }[]
+const expositores = db.prepare(`SELECT p.id, u.nombre, p.rubro, p.ciudad, p.descripcion, p.foto, p.categorias
+  FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id`).all() as { id: number; nombre: string; rubro: string; ciudad: string; descripcion: string; foto: string; categorias: string }[]
+
+// eliminar postulaciones demo previas para re-sembrar limpias
+db.prepare('DELETE FROM postulaciones WHERE expositor_id IN (SELECT id FROM perfiles)').run()
+db.prepare('DELETE FROM participaciones WHERE expositor_id IN (SELECT id FROM perfiles)').run()
+
+const estadosSeq = ['aceptada', 'recibida', 'en_revision', 'rechazada', 'en_espera']
+const insPost = db.prepare('INSERT INTO postulaciones (expositor_id, feria_id, estado, snapshot) VALUES (?, ?, ?, ?)')
+
+expositores.forEach((ex, i) => {
+  const feria = feriasIds[i % feriasIds.length] // rotar por ferias
+  const estado = estadosSeq[i % estadosSeq.length]
+  const snapshot = JSON.stringify({
+    nombre: ex.nombre,
+    rubro: ex.rubro,
+    ciudad: ex.ciudad,
+    descripcion: ex.descripcion,
+    foto: ex.foto,
+    categorias: JSON.parse(ex.categorias || '[]'),
+  })
+  insPost.run(ex.id, feria.id, estado, snapshot)
+
+  // si está aceptada, generar una participación
+  if (estado === 'aceptada') {
+    db.prepare("INSERT INTO participaciones (expositor_id, feria_id, asistio, confirmada_at) VALUES (?, ?, 1, datetime('now'))")
+      .run(ex.id, feria.id)
+  }
+})
+console.log('Seed: postulaciones demo en todos los estados creadas')
+
 console.log('DB lista. Demo org: org@feriahub.cl / demo1234 · Expo: expo@feriahub.cl / demo1234')
