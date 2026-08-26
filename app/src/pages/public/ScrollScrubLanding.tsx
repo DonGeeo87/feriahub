@@ -67,7 +67,6 @@ export default function ScrollScrubLanding({
   const [loadedCount, setLoadedCount] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
-  const cacheRef = useRef<Record<string, string>>({}) // idx → dataURL (en memoria, sin re-fetch)
   const trackedEnd = useRef(false)
   const trackedRol = useRef<string | null>(null)
 
@@ -81,37 +80,32 @@ export default function ScrollScrubLanding({
     return () => window.removeEventListener('resize', detectar)
   }, [])
 
-  // Precarga TODOS los frames del set activo en caché, y actualiza el <img> sin re-render.
+  // Precarga el SPRITESHEET (una sola imagen con los 120 frames en grid).
+  // Con background-position se muestra cada frame al instante, sin re-fetch → cero negro.
   useEffect(() => {
     if (reduced) return
-    const base = setMovil ? '/frames-movil' : '/frames'
-    const cache = cacheRef.current
+    const sprite = setMovil ? '/sprite_feria_movil.webp' : '/sprite_feria.webp'
+    const img = new Image()
+    img.onload = () => { setLoadedCount(TOTAL_FRAMES); setReady(true) }
+    img.src = sprite
 
-    const setSrc = (idx: number) => {
-      if (!frameRef.current) return
-      const url = cache[String(idx)] ?? `${base}/frame_${String(idx).padStart(3, '0')}.webp`
-      // solo cambia si el frame cambió
-      if (frameRef.current.dataset.idx !== String(idx)) {
-        frameRef.current.style.backgroundImage = `url("${url}")`
-        frameRef.current.dataset.idx = String(idx)
-      }
+    // Configuración del grid del sprite (12 columnas × 10 filas)
+    const COLS = 12
+
+    const setFramePos = (idx: number) => {
+      const el = frameRef.current
+      if (!el) return
+      if (el.dataset.idx === String(idx)) return
+      const zero = idx - 1
+      const col = zero % COLS
+      const row = Math.floor(zero / COLS)
+      // background-size: ancho total del sprite / número de columnas
+      el.style.backgroundSize = `${COLS * 100}% auto`
+      el.style.backgroundPosition = `${(col / (COLS - 1)) * 100}% ${(row / 9) * 100}%`
+      el.dataset.idx = String(idx)
     }
 
-    // Precargar todos (120) en paralelo — el navegador cachea los WebP (rápido, sin dataURL)
-    let loaded = 0
-    for (let i = 1; i <= TOTAL_FRAMES; i++) {
-      const url = `${base}/frame_${String(i).padStart(3, '0')}.webp`
-      const img = new Image()
-      img.onload = () => {
-        cache[String(i)] = url
-        loaded++
-        setLoadedCount(loaded)
-        if (loaded === TOTAL_FRAMES) setReady(true)
-      }
-      img.src = url
-    }
-
-    // Scroll → actualizar <img> imperativamente con rAF (sin re-render de React)
+    // Scroll → actualizar background-position con rAF (sin re-render de React)
     let raf = 0
     const onScroll = () => {
       cancelAnimationFrame(raf)
@@ -123,7 +117,7 @@ export default function ScrollScrubLanding({
         const scrolled = Math.max(0, Math.min(1, -el.getBoundingClientRect().top / Math.max(totalScroll, 1)))
         setProgress(scrolled)
         const idx = Math.max(1, Math.min(TOTAL_FRAMES, Math.round(1 + scrolled * (TOTAL_FRAMES - 1))))
-        setSrc(idx)
+        setFramePos(idx)
         const end = scrolled > 0.955
         setNearEnd(end)
         if (end && !trackedEnd.current) {
@@ -215,9 +209,9 @@ export default function ScrollScrubLanding({
 
           <div
             ref={frameRef}
-            className="absolute inset-0 w-full h-full bg-cover bg-center"
+            className="absolute inset-0 w-full h-full"
             data-idx="1"
-            style={{ backgroundImage: `url("${base}/frame_001.webp")`, willChange: 'background-image' }}
+            style={{ backgroundImage: `url("${setMovil ? '/sprite_feria_movil.webp' : '/sprite_feria.webp'}")`, backgroundSize: '1200% auto', backgroundPosition: '0% 0%', backgroundRepeat: 'no-repeat', willChange: 'background-position' }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/25 pointer-events-none" />
 
