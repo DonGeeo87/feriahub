@@ -302,61 +302,53 @@ export default function ScrollScrubLanding({
             <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-6 overflow-y-auto">
               <div className="text-center max-w-lg py-4">
                 <CierraItem d="0s">
-                  <h2 className="font-display text-2xl sm:text-3xl font-bold text-white">FeriaHub te invita a probarlo</h2>
+                  <p className="text-feria-accent2 font-display text-sm tracking-[0.3em] font-bold uppercase" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.9)' }}>Estamos dando los primeros pasos</p>
                 </CierraItem>
-                <CierraItem d="0.12s">
-                  <p className="mt-2 text-white/80 text-sm">Estamos construyéndolo con personas como tú. Pruébalo gratis y cuéntanos qué necesitas.</p>
+                <CierraItem d="0.1s">
+                  <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-white">FeriaHub es una plataforma gratuita en desarrollo</h2>
                 </CierraItem>
-
-                <CierraItem d="0.24s">
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <button onClick={() => elegir('expositor')}
-                      className="bg-white rounded-xl p-5 text-left hover:bg-feria-50 transition-colors">
-                      <Storefront size={28} weight="duotone" className="text-feria-600" />
-                      <div className="mt-2 font-semibold text-feria-800">Soy expositor</div>
-                      <div className="text-xs text-feria-500 mt-1">Busco ferias y postulo</div>
-                    </button>
-                    <button onClick={() => elegir('organizador')}
-                      className="bg-white rounded-xl p-5 text-left hover:bg-feria-50 transition-colors">
-                      <MapPin size={28} weight="duotone" className="text-feria-accent" />
-                      <div className="mt-2 font-semibold text-feria-800">Soy organizador</div>
-                      <div className="text-xs text-feria-500 mt-1">Publico y selecciono</div>
-                    </button>
-                  </div>
+                <CierraItem d="0.2s">
+                  <p className="mt-3 text-white/80 text-sm">Queremos que postular a una feria deje de ser un trámite engorroso para los expositores y los organizadores. Solo lo lograremos con tu participación: prueba las demos y cuéntanos qué necesitas.</p>
                 </CierraItem>
 
-                <CierraItem d="0.36s">
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                {/* DEMOS — el foco principal */}
+                <CierraItem d="0.3s">
+                  <div className="mt-6 grid grid-cols-2 gap-3">
                     <button onClick={() => { track('landing_ver_demo'); onExploreDemo() }}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 backdrop-blur px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">
-                      <Storefront size={16} weight="bold" /> Demo expositor
+                      className="bg-feria-accent rounded-xl p-5 text-left hover:bg-feria-accent/90 transition-colors">
+                      <Storefront size={24} weight="duotone" className="text-white" />
+                      <div className="mt-2 font-semibold text-white">Probar la demo de expositor</div>
+                      <div className="text-xs text-white/80 mt-1">Cómo postular a ferias</div>
                     </button>
                     {onExploreDemoOrganizador && (
                       <button onClick={() => { track('demo_ver_organizador'); onExploreDemoOrganizador() }}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 backdrop-blur px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">
-                        <MapPin size={16} weight="bold" /> Demo organizador
+                        className="bg-white rounded-xl p-5 text-left hover:bg-feria-50 transition-colors">
+                        <MapPin size={24} weight="duotone" className="text-feria-accent" />
+                        <div className="mt-2 font-semibold text-feria-800">Probar la demo de organizador</div>
+                        <div className="text-xs text-feria-500 mt-1">Cómo gestionar una convocatoria</div>
                       </button>
                     )}
                   </div>
                 </CierraItem>
 
-                <CierraItem d="0.42s">
+                {/* ENCUESTA — segundo foco */}
+                <CierraItem d="0.4s">
                   <a
                     href="https://codigoguerrero.dev/ferias/encuesta"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => track('landing_encuesta')}
-                    className="mt-2 inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 backdrop-blur px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
+                    className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/40 bg-white/10 backdrop-blur px-5 py-3 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
                   >
-                    Responder la encuesta de 2 minutos →
+                    Contar su experiencia: encuesta de 2 minutos →
                   </a>
                 </CierraItem>
 
-                <CierraItem d="0.52s">
-                  <p className="mt-2 text-white/50 text-xs">Tu opinión define hacia dónde crece la plataforma.</p>
+                <CierraItem d="0.5s">
+                  <p className="mt-3 text-white/50 text-xs">Cada aporte ayuda a que una plataforma gratuita y de calidad llegue a las ferias de todo Chile.</p>
                 </CierraItem>
 
-                <CierraItem d="0.64s">
+                <CierraItem d="0.62s">
                   <div className="mt-6 pt-4 border-t border-white/10 inline-flex items-center gap-2 text-white/40 text-xs">
                     <span className="w-4 h-4 rounded bg-white/15 flex items-center justify-center text-[9px] font-bold text-white/70">CG</span>
                     <span>Hecho por <span className="text-white/60 font-medium">Código Guerrero Dev</span> · Chile</span>
