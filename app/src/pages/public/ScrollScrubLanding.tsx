@@ -62,7 +62,7 @@ export default function ScrollScrubLanding({
   const [ready, setReady] = useState(false)
   const [loadedCount, setLoadedCount] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  const imgRef = useRef<HTMLImageElement>(null)
+  const frameRef = useRef<HTMLDivElement>(null)
   const cacheRef = useRef<Record<string, string>>({}) // url → dataURL (caché en memoria)
   const trackedEnd = useRef(false)
   const trackedRol = useRef<string | null>(null)
@@ -82,15 +82,14 @@ export default function ScrollScrubLanding({
     if (reduced) return
     const base = setMovil ? '/frames-movil' : '/frames'
     const cache = cacheRef.current
-    let lastIdx = 1
 
     const setSrc = (idx: number) => {
-      if (!imgRef.current) return
+      if (!frameRef.current) return
       const url = cache[String(idx)] ?? `${base}/frame_${String(idx).padStart(3, '0')}.webp`
-      // solo cambia el src si cambió el frame (evita re-decodificar el mismo)
-      if (imgRef.current.dataset.idx !== String(idx)) {
-        imgRef.current.src = url
-        imgRef.current.dataset.idx = String(idx)
+      // solo cambia si el frame cambió
+      if (frameRef.current.dataset.idx !== String(idx)) {
+        frameRef.current.style.backgroundImage = `url("${url}")`
+        frameRef.current.dataset.idx = String(idx)
       }
     }
 
@@ -178,13 +177,11 @@ export default function ScrollScrubLanding({
             </div>
           )}
 
-          <img
-            ref={imgRef}
-            src={`${base}/frame_001.webp`}
-            alt="Feria chilena"
-            className="absolute inset-0 w-full h-full object-cover"
-            draggable={false}
-            decoding="async"
+          <div
+            ref={frameRef}
+            className="absolute inset-0 w-full h-full bg-cover bg-center"
+            data-idx="1"
+            style={{ backgroundImage: `url("${base}/frame_001.webp")`, willChange: 'background-image' }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/25 pointer-events-none" />
 
