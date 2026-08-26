@@ -47,7 +47,8 @@ app.use('/api/tracking', trackingRoutes)
 const distPath = path.resolve(process.cwd(), 'app/dist')
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath))
-  app.get('/{*path}', (_req, res) => res.sendFile(path.join(distPath, 'index.html')))
+  // catch-all para SPA (Express 4): sirve index.html para cualquier ruta no-API
+  app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(distPath, 'index.html')))
 }
 
 const PORT = Number(process.env.PORT || 3000)
