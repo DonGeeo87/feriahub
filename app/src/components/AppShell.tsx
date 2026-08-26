@@ -1,4 +1,5 @@
 import { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Storefront, SignOut, House, MagnifyingGlass, ClipboardText, Trophy, User } from '@phosphor-icons/react'
 import { useAuth } from '../lib/auth'
 
@@ -22,13 +23,19 @@ export function AppShell({
   tab, onTab, children,
 }: { tab: string; onTab: (t: any) => void; children: ReactNode }) {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const nav = user?.rol === 'expositor' ? NAV_EXPO : NAV_ORG
+
+  const salir = () => {
+    logout()
+    navigate('/')
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-20 bg-white/85 backdrop-blur border-b border-feria-100">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <button onClick={() => onTab(user?.rol === 'expositor' ? 'home' : 'dashboard')} className="flex items-center gap-2">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2">
             <span className="w-8 h-8 rounded-lg bg-feria-600 text-white flex items-center justify-center">
               <Storefront size={18} weight="bold" />
             </span>
@@ -44,7 +51,7 @@ export function AppShell({
             ))}
           </nav>
 
-          <button onClick={logout} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-feria-500 hover:bg-feria-100" title="Cerrar sesión">
+          <button onClick={salir} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-feria-500 hover:bg-feria-100" title="Cerrar sesión">
             <SignOut size={18} weight="bold" />
             <span className="hidden sm:inline">Salir</span>
           </button>

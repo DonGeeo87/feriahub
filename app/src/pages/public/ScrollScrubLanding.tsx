@@ -51,9 +51,11 @@ function capituloActivo(progress: number): number {
 export default function ScrollScrubLanding({
   onChooseRol,
   onExploreDemo,
+  onExploreDemoOrganizador,
 }: {
   onChooseRol: (rol: 'expositor' | 'organizador') => void
   onExploreDemo: () => void
+  onExploreDemoOrganizador?: () => void
 }) {
   const [progress, setProgress] = useState(0)
   const [nearEnd, setNearEnd] = useState(false)
@@ -300,10 +302,18 @@ export default function ScrollScrubLanding({
                 </CierraItem>
 
                 <CierraItem d="0.36s">
-                  <button onClick={() => { track('landing_ver_demo'); onExploreDemo() }}
-                    className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-white/40 bg-white/10 backdrop-blur px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">
-                    Ver la demo sin registrarme
-                  </button>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button onClick={() => { track('landing_ver_demo'); onExploreDemo() }}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 backdrop-blur px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">
+                      <Storefront size={16} weight="bold" /> Demo expositor
+                    </button>
+                    {onExploreDemoOrganizador && (
+                      <button onClick={() => { track('demo_ver_organizador'); onExploreDemoOrganizador() }}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/10 backdrop-blur px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">
+                        <MapPin size={16} weight="bold" /> Demo organizador
+                      </button>
+                    )}
+                  </div>
                 </CierraItem>
 
                 <CierraItem d="0.42s">
