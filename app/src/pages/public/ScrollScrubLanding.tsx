@@ -340,7 +340,7 @@ export default function ScrollScrubLanding({
                     onClick={() => track('landing_encuesta')}
                     className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/40 bg-white/10 backdrop-blur px-5 py-3 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
                   >
-                    ¿Le interesa? Ayúdenos a saberlo: encuesta de 2 minutos →
+                    ¿Te interesa? Ayúdanos a saberlo: encuesta de 2 minutos →
                   </a>
                 </CierraItem>
 
