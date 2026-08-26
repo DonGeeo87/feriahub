@@ -65,7 +65,6 @@ export default function ScrollScrubLanding({
   const [setMovil, setSetMovil] = useState(false) // true = usar frames-movil (vertical)
   const [ready, setReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const trackedEnd = useRef(false)
   const trackedRol = useRef<string | null>(null)
@@ -80,78 +79,63 @@ export default function ScrollScrubLanding({
     return () => window.removeEventListener('resize', detectar)
   }, [])
 
-  // Técnica canvas + video (estándar en sitios premium como Apple/Samsung):
-  // se mapea el scroll a video.currentTime y se pinta el frame con drawImage.
-  // Calidad nativa total, sin frames individuales, sin spritesheet pixelado, sin negro.
+  // Video visible + scroll controla currentTime (sin canvas).
+  // Lenis intercepta el scroll nativo, así que usamos loop de rAF que lee la posición real.
   useEffect(() => {
     if (reduced) return
-    const videoSrc = setMovil ? '/web_feria_movil.mp4' : '/web_feria.mp4'
-
-    const canvas = canvasRef.current
+    const videoSrc = setMovil ? '/scrub_feria_movil.mp4' : '/scrub_feria.mp4'
     const video = videoRef.current
-    if (!canvas || !video) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    // Ajustar canvas al tamaño del contenedor
-    const resize = () => {
-      const el = containerRef.current
-      if (!el) return
-      canvas.width = el.clientWidth
-      canvas.height = el.clientHeight
-    }
-    resize()
+    if (!video) return
 
     video.muted = true
     video.playsInline = true
     video.preload = 'auto'
     video.src = videoSrc
+
+    // Mostrar el primer frame: cargar + pausar en 0 (no reproducir)
     video.onloadeddata = () => {
+      video.currentTime = 0
+      video.pause()
       setReady(true)
-      render()
     }
 
-    // Pintar el frame actual del video en el canvas
-    const render = () => {
-      if (ctx && video.readyState >= 2) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-      }
-    }
-
-    // Scroll → avanzar/retroceder video (no se reproduce, solo se "busca")
+    // Loop continuo de rAF: ajusta video.currentTime según la posición real del contenedor.
     let raf = 0
-    const onScroll = () => {
-      cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => {
-        const el = containerRef.current
-        if (!el) return
-        const viewportH = window.innerHeight
-        const totalScroll = el.offsetHeight - viewportH
-        const scrolled = Math.max(0, Math.min(1, -el.getBoundingClientRect().top / Math.max(totalScroll, 1)))
-        setProgress(scrolled)
-        if (video.duration) {
+    let lastTime = -1
+    let lastProgress = -1
+    let lastNearEnd: boolean | null = null
+    const loop = () => {
+      raf = requestAnimationFrame(loop)
+      const el = containerRef.current
+      if (!el) return
+      const viewportH = window.innerHeight
+      const totalScroll = el.offsetHeight - viewportH
+      const scrolled = Math.max(0, Math.min(1, -el.getBoundingClientRect().top / Math.max(totalScroll, 1)))
+
+      // Solo hacer seek si el progreso cambió
+      if (video.duration) {
+        const t = Math.round(scrolled * video.duration * 10)
+        if (t !== lastTime) {
+          lastTime = t
           video.currentTime = scrolled * video.duration
         }
-        render()
-        const end = scrolled > 0.955
+      }
+      if (Math.abs(scrolled - lastProgress) > 0.005) {
+        lastProgress = scrolled
+        setProgress(scrolled)
+      }
+      const end = scrolled > 0.955
+      if (end !== lastNearEnd) {
+        lastNearEnd = end
         setNearEnd(end)
         if (end && !trackedEnd.current) {
           trackedEnd.current = true
           track('landing_final')
         }
-      })
+      }
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', resize)
-    resize()
-    onScroll()
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', resize)
-      cancelAnimationFrame(raf)
-    }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
   }, [reduced, setMovil])
 
   const base = setMovil ? '/frames-movil' : '/frames'
@@ -216,10 +200,15 @@ export default function ScrollScrubLanding({
             </div>
           )}
 
-          {/* Canvas donde se pinta el frame del video según el scroll */}
-          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-          {/* Video oculto (no se reproduce, solo se busca por scroll) */}
-          <video ref={videoRef} className="hidden" muted playsInline preload="auto" />
+          {/* VIDEO visible directo (sin canvas) — el scroll controla currentTime.
+              El video se decodifica solo y muestra cada frame según la posición de scroll */}
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            muted
+            playsInline
+            preload="auto"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/25 pointer-events-none" />
 
           {/* SALTAR historia */}
