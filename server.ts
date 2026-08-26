@@ -9,6 +9,7 @@ import perfilRoutes from './api/routes/perfiles'
 import feriaRoutes from './api/routes/ferias'
 import postulacionRoutes from './api/routes/postulaciones'
 import participacionRoutes from './api/routes/participaciones'
+import trackingRoutes from './api/routes/tracking'
 
 initSchema()
 
@@ -24,6 +25,7 @@ app.use('/api/perfiles', perfilRoutes)
 app.use('/api/ferias', feriaRoutes)
 app.use('/api/postulaciones', postulacionRoutes)
 app.use('/api/participaciones', participacionRoutes)
+app.use('/api/tracking', trackingRoutes)
 
 // Servir el frontend build (en producción)
 const distPath = path.resolve(process.cwd(), 'app/dist')

@@ -20,3 +20,6 @@ app/dist/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# videos fuente (no necesarios en build, ya extraídos a frames)
+app/public/*.mp4

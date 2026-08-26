@@ -1,0 +1,45 @@
+name: Deploy FeriaHub to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          EOF
+
+      - name: Copy project to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "."
+          target: "/opt/feriahub"
+          strip_components: 0
+          overwrite: true
+
+      - name: Build and deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            cd /opt/feriahub
+            docker compose build --no-cache 2>&1 && \
+            docker compose down && \
+            docker compose up -d && \
+            # limpiar caché NPM para que sirva el bundle nuevo
+            docker exec nginx-proxy-manager sh -c 'rm -rf /data/nginx/cache/* 2>/dev/null; nginx -s reload 2>/dev/null' || true
+            echo "✅ FeriaHub deployed"

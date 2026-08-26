@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import { ApiError } from '../lib/api'
 import type { Rol } from '../lib/api'
 
-export default function LoginView({ onSwitch }: { onSwitch: (m: 'login' | 'register') => void }) {
+export default function LoginView({ onSwitch, demoError }: { onSwitch: (m: 'login' | 'register') => void; demoError?: string }) {
   const { login, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,6 +27,7 @@ export default function LoginView({ onSwitch }: { onSwitch: (m: 'login' | 'regis
         <p className="mt-1 text-sm text-feria-600">Accede para encontrar tu próxima feria.</p>
 
         {error && <div className="mt-4 rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 text-sm text-rose-700">{error}</div>}
+        {demoError && !error && <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">{demoError}</div>}
 
         <form onSubmit={submit} className="mt-5 space-y-4">
           <div>
@@ -53,9 +54,9 @@ export default function LoginView({ onSwitch }: { onSwitch: (m: 'login' | 'regis
   )
 }
 
-export function RegisterView({ onSwitch }: { onSwitch: (m: 'login' | 'register') => void }) {
+export function RegisterView({ onSwitch, initialRol }: { onSwitch: (m: 'login' | 'register') => void; initialRol?: Rol }) {
   const { register, loading } = useAuth()
-  const [rol, setRol] = useState<Rol | null>(null)
+  const [rol, setRol] = useState<Rol | null>(initialRol || null)
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

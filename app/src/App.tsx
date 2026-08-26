@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AuthProvider, useAuth } from './lib/auth'
 import { AppShell, type ExpositorTab, type OrganizadorTab } from './components/AppShell'
 import LoginView, { RegisterView } from './pages/LoginView'
+import ScrollScrubLanding from './pages/public/ScrollScrubLanding'
 import ExpositorHome from './pages/expositor/ExpositorHome'
 import ExplorarFerias from './pages/expositor/ExplorarFerias'
 import DetalleFeria from './pages/expositor/DetalleFeria'
@@ -10,6 +11,7 @@ import MiTrayectoria from './pages/expositor/MiTrayectoria'
 import PerfilView from './pages/expositor/PerfilView'
 import DashboardOrganizador from './pages/organizador/DashboardOrganizador'
 import PanelPostulaciones from './pages/organizador/PanelPostulaciones'
+import { api, type Rol } from './lib/api'
 
 export default function App() {
   return (
@@ -19,24 +21,36 @@ export default function App() {
   )
 }
 
+type PublicView = 'landing' | 'login' | 'register'
+
 function Inner() {
-  const { user } = useAuth()
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+  const { user, login } = useAuth()
+  const [view, setView] = useState<PublicView>('landing')
+  const [initialRol, setInitialRol] = useState<Rol | undefined>()
+  const [demoError, setDemoError] = useState('')
 
-  // Vista pública: login/registro si no hay sesión
-  if (!user) {
-    return authMode === 'login'
-      ? <LoginView onSwitch={setAuthMode} />
-      : <RegisterView onSwitch={setAuthMode} />
+  // Entrar a la demo sin registrarse: login con cuenta demo de expositor
+  const entrarDemo = async () => {
+    try {
+      await login('expo@feriahub.cl', 'demo1234')
+    } catch {
+      setDemoError('No se pudo cargar la demo. Intenta crearte una cuenta gratis.')
+    }
   }
 
-  // Rol expositor
-  if (user.rol === 'expositor') {
-    return <ExpositorApp />
+  // Si hay sesión, vamos directo a la app según rol
+  if (user) {
+    return user.rol === 'expositor' ? <ExpositorApp /> : <OrganizadorApp />
   }
 
-  // Rol organizador
-  return <OrganizadorApp />
+  // Vista pública: landing scrollable por defecto
+  if (view === 'landing') {
+    return <ScrollScrubLanding onChooseRol={(rol) => { setInitialRol(rol); setView('register') }} onExploreDemo={entrarDemo} />
+  }
+  if (view === 'register') {
+    return <RegisterView onSwitch={(m) => setView(m === 'login' ? 'login' : 'register')} initialRol={initialRol} />
+  }
+  return <LoginView onSwitch={(m) => setView(m === 'register' ? 'register' : 'login')} demoError={demoError} />
 }
 
 function ExpositorApp() {

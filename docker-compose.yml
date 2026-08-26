@@ -1,0 +1,22 @@
+services:
+  feriahub:
+    build: .
+    container_name: feriahub
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3013:3000"   # expuesto solo en localhost, NPM proxea
+    environment:
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET}
+      - DATA_DIR=/data
+    volumes:
+      - feriahub_data:/data
+    networks:
+      - proxy-network
+
+volumes:
+  feriahub_data:
+
+networks:
+  proxy-network:
+    external: true

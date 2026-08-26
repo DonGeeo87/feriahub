@@ -59,3 +59,11 @@ CREATE TABLE IF NOT EXISTS participaciones (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (expositor_id, feria_id)
 );
+
+-- Tracking de la landing scrollable (eventos del visitante anónimo)
+CREATE TABLE IF NOT EXISTS tracking_landing (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  evento TEXT NOT NULL,
+  extra TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

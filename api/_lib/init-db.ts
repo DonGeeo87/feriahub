@@ -19,4 +19,16 @@ if (!org) {
   console.log('Seed: organizador demo + 2 ferias creados')
 }
 
-console.log('DB lista. Demo org: org@feriahub.cl / demo1234')
+// Seed: expositor demo con perfil completo (para "ver demo sin registrarme")
+const expo = db.prepare('SELECT id FROM usuarios WHERE email = ?').get('expo@feriahub.cl')
+if (!expo) {
+  const hash = bcrypt.hashSync('demo1234', 10)
+  const info = db.prepare('INSERT INTO usuarios (email, password_hash, rol, nombre) VALUES (?, ?, ?, ?)')
+    .run('expo@feriahub.cl', hash, 'expositor', 'Valentina Rojas')
+  const expoId = Number(info.lastInsertRowid)
+  db.prepare('INSERT INTO perfiles (usuario_id, rubro, ciudad, descripcion, foto, categorias, pct_perfil) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(expoId, 'Cerámica artesanal', 'Valparaíso', 'Cerámica hecha a mano en gres y porcelana. Piezas utilitarias y decorativas.', 'VR', JSON.stringify(['Cerámica', 'Arte', 'Decoración']), 100)
+  console.log('Seed: expositor demo creado (expo@feriahub.cl)')
+}
+
+console.log('DB lista. Demo org: org@feriahub.cl / demo1234 · Expo: expo@feriahub.cl / demo1234')
