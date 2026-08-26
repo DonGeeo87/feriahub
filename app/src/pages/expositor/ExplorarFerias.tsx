@@ -89,23 +89,32 @@ export default function ExplorarFerias({ onVerFeria }: { onVerFeria: (id: number
 function FeriaCard({ f, onVer }: { f: Feria; onVer: () => void }) {
   const cuposLibres = Math.max(f.cupos - f.postulados, 0)
   return (
-    <div className="card p-5 hover:shadow-lift transition-shadow">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-feria-800">{f.nombre}</h3>
-        <span className={`badge-status ${f.estado === 'abierta' ? 'bg-feria-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
-          {f.estado === 'abierta' ? 'Abierta' : f.estado === 'proxima' ? 'Próxima' : 'Cerrada'}
-        </span>
+    <div className="card overflow-hidden hover:shadow-lift transition-shadow flex flex-col aspect-[3/4]">
+      {/* portada */}
+      <div className="h-[45%] bg-gradient-to-br from-feria-600 to-feria-800 relative">
+        <div className="absolute top-3 left-3">
+          <span className={`badge-status ${f.estado === 'abierta' ? 'bg-white/90 text-feria-800' : 'bg-black/40 text-white'}`}>
+            {f.estado === 'abierta' ? 'Abierta' : f.estado === 'proxima' ? 'Próxima' : 'Cerrada'}
+          </span>
+        </div>
+        <div className="absolute bottom-3 left-3 text-white">
+          <div className="text-lg font-display font-bold leading-tight">{f.nombre}</div>
+        </div>
       </div>
-      <div className="mt-2 text-sm text-feria-500 flex items-center gap-3">
-        <span className="inline-flex items-center gap-1"><MapPin size={14} />{f.ciudad}</span>
-        <span className="inline-flex items-center gap-1"><CalendarBlank size={14} />{fmtFecha(f.fecha)}</span>
-      </div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {(f.rubros || []).slice(0, 3).map(r => <span key={r} className="chip">{r}</span>)}
-      </div>
-      <div className="mt-3 flex items-center justify-between">
-        <span className="text-sm text-feria-500"><span className="font-semibold text-feria-700">{cuposLibres}</span> cupos libres</span>
-        <button onClick={onVer} className="btn-primary">Ver feria <ArrowRight size={16} weight="bold" /></button>
+
+      {/* cuerpo */}
+      <div className="flex-1 p-4 flex flex-col">
+        <div className="text-sm text-feria-500 space-y-1">
+          <div className="inline-flex items-center gap-1"><MapPin size={13} />{f.ciudad}</div>
+          <div className="inline-flex items-center gap-1"><CalendarBlank size={13} />{fmtFecha(f.fecha)}</div>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {(f.rubros || []).slice(0, 3).map(r => <span key={r} className="chip">{r}</span>)}
+        </div>
+        <div className="mt-auto pt-3 flex items-center justify-between">
+          <span className="text-xs text-feria-500"><span className="font-semibold text-feria-700">{cuposLibres}</span> cupos libres</span>
+          <button onClick={onVer} className="btn-primary text-xs">Ver <ArrowRight size={14} weight="bold" /></button>
+        </div>
       </div>
     </div>
   )

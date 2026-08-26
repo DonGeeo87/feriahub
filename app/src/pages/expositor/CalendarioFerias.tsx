@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { CaretLeft, CaretRight, ArrowRight } from '@phosphor-icons/react'
 import type { Feria } from '../../lib/api'
 import { fmtFecha } from '../../lib/format'
 
@@ -73,12 +73,20 @@ export default function CalendarioFerias({ ferias, onVerFeria }: { ferias: Feria
             <div key={d}
               className={`min-h-16 rounded-lg p-1 border ${esHoy ? 'border-feria-accent bg-feria-50' : 'border-feria-100'} ${feriasDia.length ? 'bg-feria-50/60' : ''}`}>
               <div className={`text-xs font-semibold ${esHoy ? 'text-feria-accent' : 'text-feria-500'}`}>{d}</div>
-              {feriasDia.slice(0, 2).map(f => (
-                <button key={f.id} onClick={() => onVerFeria(f.id)}
-                  className="mt-0.5 w-full text-left text-[10px] leading-tight bg-feria-600 text-white rounded px-1 py-0.5 truncate hover:bg-feria-700">
-                  {f.nombre}
-                </button>
-              ))}
+              {feriasDia.slice(0, 2).map(f => {
+                const usados = f.postulados || 0
+                const libres = Math.max(f.cupos - usados, 0)
+                return (
+                  <button key={f.id} onClick={() => onVerFeria(f.id)}
+                    className="mt-0.5 w-full text-left bg-feria-600 text-white rounded px-1 py-1 hover:bg-feria-700 transition-colors">
+                    <div className="text-[10px] leading-tight font-medium truncate">{f.nombre}</div>
+                    <div className="text-[9px] text-white/80 leading-tight mt-0.5 flex items-center justify-between">
+                      <span>{usados}/{f.cupos} usados</span>
+                      <span className="inline-flex items-center gap-0.5">Ver <ArrowRight size={8} weight="bold" /></span>
+                    </div>
+                  </button>
+                )
+              })}
               {feriasDia.length > 2 && <div className="text-[9px] text-feria-400 mt-0.5">+{feriasDia.length - 2} más</div>}
             </div>
           )

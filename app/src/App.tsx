@@ -31,15 +31,12 @@ function Inner() {
   // Entrar a la demo sin registrarse (elige rol y entra con cuenta demo)
   const entrarDemo = async (rol: 'expositor' | 'organizador') => {
     try {
-      if (rol === 'organizador') {
-        await login('org@feriahub.cl', 'demo1234')
-        navigate('/organizador')
-      } else {
-        await login('expo@feriahub.cl', 'demo1234')
-        navigate('/expositor')
-      }
+      const u = rol === 'organizador'
+        ? await login('org@feriahub.cl', 'demo1234')
+        : await login('expo@feriahub.cl', 'demo1234')
+      // login() ya hace setUser; navegar a '/' dispara el redirect automático al dashboard según rol
+      navigate(u.rol === 'expositor' ? '/expositor' : '/organizador', { replace: true })
     } catch {
-      // si falla, ir a login
       navigate('/login')
     }
   }
